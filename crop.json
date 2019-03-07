@@ -1,0 +1,117 @@
+  {
+	"crops": {
+		"SM": {
+			"cropParams": {
+				"is-winter-crop": false,
+				"species": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/maize.json"],
+				"cultivar": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/silage-maize.json"]
+			},
+			"residueParams": ["include-from-file", "crop-residues/maize.json"]
+		},
+
+		"WW": {
+			"is-winter-crop": true,
+			"cropParams": {
+					"species": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/wheat.json"],
+					"cultivar": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/winter-wheat.json"]
+			},
+			"residueParams": ["include-from-file", "crop-residues/wheat.json"]
+		}
+	},
+	
+	"fert-params": {
+		"AN": ["include-from-file", "mineral-fertilisers/AN.json"],
+		"org_fert": ["include-from-file", "organic-fertilisers/PIS.json"]
+	}, 	
+
+	"cropRotation": {
+
+		"SM": [
+			{
+				"worksteps": {
+					"sowing": {
+						"fixed": { 
+							"date": "0000-04-26", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "SM"] 
+						},
+						"auto": { 
+							"type": "AutomaticSowing", 
+							"crop": ["ref", "crops", "SM"],
+							"earliest-date": "0000-04-05",
+							"latest-date": "0000-05-10",
+							"min-temp": 8.0,
+							"days-in-temp-window": 5,
+							"min-%-asw": 0,
+							"max-%-asw": 100,
+							"max-3d-precip-sum": 5,
+							"max-curr-day-precip": 0.5,
+							"temp-sum-above-base-temp": 380,
+							"base-temp": 0 
+						}
+					},
+					"harvest": {
+						"fixed": { 
+							"type": "Harvest", 
+							"date": "0000-09-24"
+						},
+						"auto": { 
+							"type": "AutomaticHarvest", 
+							"latest-date": "0000-10-27",
+							"min-%-asw": 0,
+							"max-%-asw": 100,
+							"max-3d-precip-sum": 5,
+							"max-curr-day-precip": 1,
+							"harvest-time": "maturity"
+						}
+					}
+				}
+			}
+		],
+
+		"WW": [
+			{
+				"worksteps": {
+					"sowing": {
+						"fixed": { 
+							"date": "0000-10-05", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "WW"] 
+						},
+						"auto": { 
+							"type": "AutomaticSowing", 
+							"crop": ["ref", "crops", "WW"],
+							"earliest-date": "0000-08-26",
+							"latest-date": "0000-10-09",
+							"min-temp": 22.0,
+							"days-in-temp-window": 10,
+							"min-%-asw": 0,
+							"max-%-asw": 100,
+							"max-3d-precip-sum": 2,
+							"max-curr-day-precip": 0.1,
+							"temp-sum-above-base-temp": 0,
+							"base-temp": 0 
+						}
+					},
+					"harvest": {
+						"fixed": { 
+							"type": "Harvest", 
+							"date": "0001-08-04"
+						},
+						"auto": { 
+							"type": "AutomaticHarvest", 
+							"latest-date": "0001-09-07",
+							"min-%-asw": 0,
+							"max-%-asw": 100,
+							"max-3d-precip-sum": 5,
+							"max-curr-day-precip": 1,
+							"harvest-time": "maturity"
+						}
+					}
+				}
+			}
+		]
+	},
+
+	"CropParameters": ["include-from-file", "general/crop.json"]	
+}

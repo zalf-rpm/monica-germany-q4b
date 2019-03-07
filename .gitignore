@@ -112,3 +112,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/csv-out
+/out
+/debug_out
+/monica-data
+/crop_params
