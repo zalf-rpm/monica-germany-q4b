@@ -58,12 +58,15 @@ PATHS = {
 
 CONFIGURATION = {
         "mode": USER_MODE,
-        "port": "7777",
         "server": "cluster1",
+        "server-port": "7777",
+        "producer-server": "localhost",
+        "producer-config-port": "6661",
+        "producer-sync-port": "6662",
         "start-row": "0",
         "end-row": "-1",
         "shared_id": None,
-        "no-of-setups": None
+        "no-of-setups": 1
     }
 
 TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}germany/buek1000_1000_gk5.asc"
@@ -112,7 +115,7 @@ def create_output(result):
     return cm_count_to_vals
 
 
-def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, path_to_csv_output_dir, setup_id, row_col_2_lk):
+def write_row_to_grids(row_col_data, row, ncols, grid_header, path_to_output_dir, path_to_csv_output_dir, setup_id, row_col_2_lk):
     "write grids row by row"
     
     if row in row_col_data:
@@ -123,7 +126,7 @@ def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, pat
             if not os.path.isfile(path_to_row_file):
                 with open(path_to_row_file, "wb") as _:
                     writer = csv.writer(_)
-                    header = [
+                    csv_header = [
                         "lk","CM-count","row","col","Crop",
                         "Sowing-doy","Sowing-year",
                         "Harvest-doy", "Harvest-year",
@@ -133,7 +136,7 @@ def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, pat
                         "Maturity-doy","Maturity-year",
                         "Cycle-length"
                     ]
-                    writer.writerow(header)
+                    writer.writerow(csv_header)
 
             with open(path_to_row_file, 'ab') as _:
                 writer = csv.writer(_, delimiter=",")
@@ -254,7 +257,7 @@ def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, pat
 
             if not os.path.isfile(path_to_file):
                 with open(path_to_file, "w") as _:
-                    _.write(header)
+                    _.write(grid_header)
                     write_row_to_grids.list_of_output_files[setup_id].append(path_to_file)
 
             with open(path_to_file, "a") as file_:
@@ -298,24 +301,27 @@ def run_consumer(config, leave_after_finished_run = True):
         socket.setsockopt(zmq.IDENTITY, config["shared_id"])
     else:
         socket = context.socket(zmq.PULL)
+        producer_sync_socket = context.socket(zmq.PUSH)
 
-    socket.connect("tcp://" + config["server"] + ":" + config["port"])
+    socket.connect("tcp://" + config["server"] + ":" + config["server-port"])
+    socket.connect("tcp://" + config["producer-server"] + ":" + config["producer-config-port"])
+    producer_sync_socket.bind("tcp://*:" + config["producer-sync-port"])
 
     leave = False
     write_normal_output_files = False
 
     path_to_soil_grid = TEMPLATE_SOIL_PATH.format(local_path_to_data_dir=paths["local-path-to-data-dir"])
     soil_metadata, header = Mrunlib.read_header(path_to_soil_grid)
-    soil_grid_template = np.loadtxt(path_to_soil_grid, dtype=int, skiprows=6)
+    #soil_grid_template = np.loadtxt(path_to_soil_grid, dtype=int, skiprows=6)
     #set invalid soils / water to no-data
-    soil_grid_template[soil_grid_template < 1] = -9999
-    soil_grid_template[soil_grid_template > 71] = -9999    
+    #soil_grid_template[soil_grid_template < 1] = -9999
+    #soil_grid_template[soil_grid_template > 71] = -9999    
     #set all data values to one, to count them later
-    soil_grid_template[soil_grid_template != -9999] = 1
+    #soil_grid_template[soil_grid_template != -9999] = 1
     #set all no-data values to 0, to ignore them while counting
-    soil_grid_template[soil_grid_template == -9999] = 0
+    #soil_grid_template[soil_grid_template == -9999] = 0
     #count cols in rows
-    datacells_per_row = np.sum(soil_grid_template, axis=1)
+    datacells_per_row = defaultdict(lambda: -1) #np.sum(soil_grid_template, axis=1)
 
     start_row = int(config["start-row"])
     end_row = int(config["end-row"])
@@ -328,11 +334,66 @@ def run_consumer(config, leave_after_finished_run = True):
         "header": header,
         "out_dir_exists": False,
         "row-col-data": defaultdict(lambda: defaultdict(list)),
-        "datacell-count": datacells_per_row.copy(),
+        "datacell-count": defaultdict(lambda: 0), #datacells_per_row.copy(),
         "next-row": start_row
     })
 
     row_col_2_lk = defaultdict()
+
+    def maybe_write_rows(data, setup_id):
+        "potentially write rows"
+
+        leave = False
+        datacell_count = data["datacell-count"]
+
+        while data["next-row"] in datacell_count and datacell_count[data["next-row"]] == 0:
+            
+            path_to_out_dir = config["out"] + str(setup_id) + "/"
+            path_to_csv_out_dir = config["csv-out"] + str(setup_id) + "/"
+            if not data["out_dir_exists"]:
+                if os.path.isdir(path_to_out_dir) and os.path.exists(path_to_out_dir):
+                    data["out_dir_exists"] = True
+                else:
+                    try:
+                        os.makedirs(path_to_out_dir)
+                        data["out_dir_exists"] = True
+                    except OSError:
+                        print "c: Couldn't create dir:", path_to_out_dir, "! Exiting."
+                        exit(1)
+                if os.path.isdir(path_to_csv_out_dir) and os.path.exists(path_to_csv_out_dir):
+                    data["out_dir_exists"] = True
+                else:
+                    try:
+                        os.makedirs(path_to_csv_out_dir)
+                        data["out_dir_exists"] = True
+                    except OSError:
+                        print "c: Couldn't create dir:", path_to_csv_out_dir, "! Exiting."
+                        exit(1)
+            
+            write_row_to_grids(data["row-col-data"], data["next-row"], data["ncols"], data["header"], path_to_out_dir, path_to_csv_out_dir, setup_id, row_col_2_lk)
+            
+            debug_msg = "wrote row: "  + str(data["next-row"]) + " next-row: " + str(data["next-row"]+1) + " rows unwritten: " + str(data["row-col-data"].keys())
+            print debug_msg
+            #debug_file.write(debug_msg + "\n")
+            
+            data["next-row"] += 1 # move to next row (to be written)
+
+            if leave_after_finished_run \
+            and ((data["end_row"] < 0 and data["next-row"] > data["nrows"]-1) \
+                or (data["end_row"] >= 0 and data["next-row"] > data["end_row"])): 
+
+                # tell the producer it can start sending the next setup 
+                producer_sync_socket.send_json({"type": "sync", "content": "start next setup id"})
+
+                process_message.setup_count += 1
+                # if all setups are done, the run_setups list should be empty and we can return
+                if process_message.setup_count >= int(config["no-of-setups"]):
+                    print "c: all results received, exiting"
+                    leave = True
+                    break
+
+
+        return leave
 
     def process_message(msg):
 
@@ -342,10 +403,23 @@ def run_consumer(config, leave_after_finished_run = True):
 
         leave = False
 
-        if msg["type"] == "finish":
+        msg_type = msg.get("type", "unknown type")
+        if msg_type == "finish":
             print "c: received finish message"
             leave = True
  
+        elif msg_type == "config":
+            print "c: received config message:", msg
+
+            setup_id = msg["setup_id"]
+            row = msg["row"]
+
+            data = setup_id_to_data[setup_id]
+            data["datacell-count"][row] += msg["data_cells_per_row"]
+            datacells_per_row[row] = msg["data_cells_per_row"]
+            leave = maybe_write_rows(data, setup_id)
+
+
         elif not write_normal_output_files:
             custom_id = msg["customId"]
             setup_id = custom_id["setup_id"]            
@@ -363,56 +437,13 @@ def run_consumer(config, leave_after_finished_run = True):
             + " next row: " + str(data["next-row"]) \
             + " cols@row to go: " + str(data["datacell-count"][row]) + "@" + str(row) + " cells_per_row: " + str(datacells_per_row[row])#\
             #+ " rows unwritten: " + str(data["row-col-data"].keys()) 
-            print debug_msg
+            #print debug_msg
             #debug_file.write(debug_msg + "\n")
             data["row-col-data"][row][col].append(create_output(msg))
             data["datacell-count"][row] -= 1
 
             process_message.received_env_count = process_message.received_env_count + 1
-
-            #while data["next-row"] in data["row-col-data"] and data["datacell-count"][data["next-row"]] == 0:
-            while data["datacell-count"][data["next-row"]] == 0:
-                
-                path_to_out_dir = config["out"] + str(setup_id) + "/"
-                path_to_csv_out_dir = config["csv-out"] + str(setup_id) + "/"
-                if not data["out_dir_exists"]:
-                    if os.path.isdir(path_to_out_dir) and os.path.exists(path_to_out_dir):
-                        data["out_dir_exists"] = True
-                    else:
-                        try:
-                            os.makedirs(path_to_out_dir)
-                            data["out_dir_exists"] = True
-                        except OSError:
-                            print "c: Couldn't create dir:", path_to_out_dir, "! Exiting."
-                            exit(1)
-                    if os.path.isdir(path_to_csv_out_dir) and os.path.exists(path_to_csv_out_dir):
-                        data["out_dir_exists"] = True
-                    else:
-                        try:
-                            os.makedirs(path_to_csv_out_dir)
-                            data["out_dir_exists"] = True
-                        except OSError:
-                            print "c: Couldn't create dir:", path_to_csv_out_dir, "! Exiting."
-                            exit(1)
-                
-                write_row_to_grids(data["row-col-data"], data["next-row"], data["ncols"], data["header"], path_to_out_dir, path_to_csv_out_dir, setup_id, row_col_2_lk)
-                
-                debug_msg = "wrote row: "  + str(data["next-row"]) + " next-row: " + str(data["next-row"]+1) + " rows unwritten: " + str(data["row-col-data"].keys())
-                print debug_msg
-                #debug_file.write(debug_msg + "\n")
-                
-                data["next-row"] += 1 # move to next row (to be written)
-
-                if leave_after_finished_run \
-                and ((data["end_row"] < 0 and data["next-row"] > data["nrows"]-1) \
-                    or (data["end_row"] >= 0 and data["next-row"] > data["end_row"])): 
-                    
-                    process_message.setup_count += 1
-                    # if all setups are done, the run_setups list should be empty and we can return
-                    if process_message.setup_count >= int(config["no-of-setups"]):
-                        print "c: all results received, exiting"
-                        leave = True
-                        break
+            leave = maybe_write_rows(data, setup_id)
                 
         elif write_normal_output_files:
 
@@ -461,17 +492,18 @@ def run_consumer(config, leave_after_finished_run = True):
     process_message.received_env_count = 1
 
     while not leave:
-        try:
-            start_time_recv = timeit.default_timer()
-            msg = socket.recv_json(encoding="latin-1")
-            elapsed = timeit.default_timer() - start_time_recv
-            print "time to receive message" + str(elapsed)
-            start_time_proc = timeit.default_timer()
-            leave = process_message(msg)
-            elapsed = timeit.default_timer() - start_time_proc
-            print "time to process message" + str(elapsed)
-        except:
-            continue
+        #try:
+        start_time_recv = timeit.default_timer()
+        msg = socket.recv_json(encoding="latin-1")
+        elapsed = timeit.default_timer() - start_time_recv
+        #print "time to receive message" + str(elapsed)
+        start_time_proc = timeit.default_timer()
+        leave = process_message(msg)
+        elapsed = timeit.default_timer() - start_time_proc
+        #print "time to process message" + str(elapsed)
+        #except Exception as e:
+        #    print "Exception:", e
+        #    continue
 
     print "exiting run_consumer()"
     #debug_file.close()

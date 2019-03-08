@@ -83,15 +83,18 @@ PATHS = {
 
 CONFIGURATION = {
         "mode": USER_MODE,
-        "port": "6666",
         "server": "localhost",
-        "start-row": "0", 
+        "server-port": "6666",
+        "producer-config-port": "6661",
+        "consumer-server": "localhost",
+        "consumer-sync-port": "6662",
+        "start-row": "308", 
         "end-row": "-1",
         "sim.json": "sim.json",
         "crop.json": "crop.json",
         "site.json": "site.json",
         "setups-file": "sim_setups.csv",
-        "run-setups": "[2]",
+        "run-setups": "[1]",
         "shared_id": None,
     }
 
@@ -126,14 +129,18 @@ def run_producer(config):
 
     context = zmq.Context()
     socket = context.socket(zmq.PUSH)
-    #config_and_no_data_socket = context.socket(zmq.PUSH)
+    consumer_config_socket = context.socket(zmq.PUSH)
+    consumer_sync_socket = context.socket(zmq.PULL)
 
     # select paths 
     paths = PATHS[config["mode"]]
     # open soil db connection
     soil_db_con = sqlite3.connect(paths["producer-path-to-data-dir"] + DATA_SOIL_DB)
     # connect to monica proxy (if local, it will try to connect to a locally started monica)
-    socket.connect("tcp://" + config["server"] + ":" + str(config["port"]))
+    socket.connect("tcp://" + config["server"] + ":" + str(config["server-port"]))
+
+    consumer_config_socket.bind("tcp://*:" + config["producer-config-port"])
+    consumer_sync_socket.connect("tcp://" + config["consumer-server"] + ":" + config["consumer-sync-port"])
 
     # read setup from csv file
     setups = Mrunlib.read_sim_setups(paths["producer-path-to-projects-dir"] + PROJECT_FOLDER + config["setups-file"])
@@ -316,7 +323,7 @@ def run_producer(config):
 
         print "All Rows x Cols: " + str(srows) + "x" + str(scols) 
         for srow in xrange(0, srows):
-           
+                      
             try:
                 print srow,
             except Exception:
@@ -328,6 +335,8 @@ def run_producer(config):
             elif int(config["end-row"]) > 0 and srow > int(config["end-row"]):
                 break
 
+            # count all the datacells which will be sent to the consumer (via the monicas)
+            data_cell_count = 0
             for scol in xrange(0, scols):
 
                 ##################test
@@ -386,7 +395,8 @@ def run_producer(config):
 
                 clat, _ = cdict[(crow, ccol)]
                 
-                # set external sowing/harvest dates               
+                # set external sowing/harvest dates
+                #print "setting sowing and harvest of lk " + str(landkreis_id)                               
                 avg_sowing_doy = int(np.average(lk_mgt_data[landkreis_id]["sowing"]))
                 earliest_sowing_doy = int(np.min(lk_mgt_data[landkreis_id]["sowing"]))
                 latest_sowing_doy = int(np.max(lk_mgt_data[landkreis_id]["sowing"]))
@@ -402,7 +412,7 @@ def run_producer(config):
                         latest_harvest_doy -= correction
                         earliest_sowing_doy += correction
                 
-                #set sowing
+                #set 
                 if setup["sowing-date"] == "fixed":
                     relative_year = worksteps[0]["date"].split("-")[0]
                     avg_date = date(2018, 12, 31) + timedelta(days=avg_sowing_doy) 
@@ -537,6 +547,7 @@ def run_producer(config):
                     socket.send_json(env_template)
                     print "sent env ", sent_env_count, " customId: ", env_template["customId"]
 
+                data_cell_count += 1
                 sent_env_count += 1
 
                 # write debug output, as json file
@@ -554,10 +565,18 @@ def run_producer(config):
                             print "WARNING: Row ", (sent_env_count-1), " already exists"
             #print "unknown_soil_ids:", unknown_soil_ids
 
+            if not DUMP_ENVS_CALIB:
+                print "config: setup_id:", setup_id, "row:", srow, "datacells_per_row:", data_cell_count 
+                consumer_config_socket.send_json({"type": "config", "setup_id": setup_id, "row": srow, "data_cells_per_row": data_cell_count})
+
             #print "crows/cols:", crows_cols
         stop_setup_time = time.clock()
         print "Setup ", (sent_env_count-1), " envs took ", (stop_setup_time - start_setup_time), " seconds"
 
+        # wait for the consumer to have processed all messages for the current setup_id, only continue 
+        print "Waiting for sync message to continue"
+        msg = consumer_sync_socket.recv_json()
+        
         ################################test
         #print "saving lk grid..."
         #np.savetxt('lk_grid.asc', lk_grid, delimiter='\t', fmt="%.0f")
