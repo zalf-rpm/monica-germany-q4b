@@ -117,3 +117,4 @@ dmypy.json
 /debug_out
 /monica-data
 /crop_params
+/calibration/

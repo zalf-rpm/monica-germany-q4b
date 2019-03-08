@@ -4,6 +4,10 @@ from collections import defaultdict
 import random
 import numpy as np
 
+'''
+Resampling cells from output files to determine the impact of the sample size on the delta |val_lk - val_sample|. 
+Helpful to identify minimum sample size for different sim_id and target variables.
+'''
 #0. Settings
 sim_id = 1
 target_var = "Anthesis-doy"#"Yield-final"
@@ -13,6 +17,7 @@ min_ss = 20
 max_ss = 400
 out_file = "ss_"+ target_var + "_SM.csv"
 max_row = 320
+###
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.dirname(script_path) + "/csv-out/" + str(sim_id)

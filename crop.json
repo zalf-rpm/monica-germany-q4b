@@ -1,8 +1,8 @@
   {
 	"crops": {
 		"SM": {
+			"is-winter-crop": false,				
 			"cropParams": {
-				"is-winter-crop": false,
 				"species": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/maize.json"],
 				"cultivar": ["include-from-file", "C:/Users/stella/Documents/GitHub/monica-germany-q4b/crop_params/silage-maize.json"]
 			},
