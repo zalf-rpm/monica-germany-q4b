@@ -88,7 +88,7 @@ CONFIGURATION = {
         "producer-config-port": "6661",
         "consumer-server": "localhost",
         "consumer-sync-port": "6662",
-        "start-row": "308", 
+        "start-row": "0", 
         "end-row": "-1",
         "sim.json": "sim.json",
         "crop.json": "crop.json",
@@ -116,7 +116,7 @@ DEBUG_ROWS = 10
 DEBUG_WRITE_FOLDER = "./debug_out"
 DEBUG_WRITE_CLIMATE = False
 
-DUMP_ENVS_CALIB = True
+DUMP_ENVS_CALIB = False
 if DUMP_ENVS_CALIB:
     DEBUG_DONOT_SEND = True #no need to run monica
     script_path = os.path.dirname(os.path.abspath(__file__))

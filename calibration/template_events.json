@@ -1,0 +1,17 @@
+{
+    "date_stage_template": [
+        "yyyy-mm-dd", [
+            "Stage|CurrentStage"
+        ]
+    ],
+
+    "sowing_yield_template": [
+        "crop", [
+            ["Year|SowYear", "FIRST"],
+            ["DOY|SowDoy", "FIRST"],
+
+            ["Year|HarvYear", "LAST"],
+            ["Yield|HarvYield", "LAST"]
+        ]
+    ]
+}

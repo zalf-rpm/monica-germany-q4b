@@ -117,4 +117,10 @@ dmypy.json
 /debug_out
 /monica-data
 /crop_params
-/calibration/
+/calibration/dumped_envs/
+/calibration/obs_vs_sim/
+/calibration/opt_params/
+/calibration/calibratethese.csv
+/calibration/clustering_lks.csv
+/calibration/local-server-command.txt
+/calibration/sample_setup_fullcover.csv
