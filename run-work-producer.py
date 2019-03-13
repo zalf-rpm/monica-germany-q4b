@@ -435,6 +435,12 @@ def run_producer(config):
                     relative_year = worksteps[1]["latest-date"].split("-")[0]
                     latest_date = date(2018, 12, 31) + timedelta(days=latest_harvest_doy)
                     worksteps[1]["latest-date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
+                if setup["harvest-date"] == "latest":
+                    #used for calibration of phenology:
+                    #prevents stage to be reset to 0
+                    relative_year = worksteps[1]["date"].split("-")[0]
+                    latest_date = date(2018, 12, 31) + timedelta(days=latest_harvest_doy) 
+                    worksteps[1]["date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
                 else:
                     print "unable to handle harvest option"
                 

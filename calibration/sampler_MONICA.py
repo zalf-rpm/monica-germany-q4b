@@ -16,7 +16,7 @@ data_path = os.path.dirname(script_path) + "/monica-data/projects/monica-germany
 
 clustering_file = "clustering_lks.csv"
 run_cells_file = "sample_setup_fullcover.csv"
-calibration_target = "phenology"#"yield"#"sowing"#  
+calibration_target = "yield"#"sowing"#"phenology"#  
 params_to_calibrate = "calibratethese.csv"
 crop = "silage_maize"# "winter_wheat"#
 dumped_envs_folder = script_path + "/dumped_envs/localProducer-localMonica/1/"
@@ -75,20 +75,6 @@ def RepresentsInt(s):
         return True
     except ValueError:
         return False
-
-def obs_sim_csv(experiments, variable):
-    with open('obs_sim_'+ variable +'.csv', 'wb') as outcsvfile:
-        writer = csv.writer(outcsvfile) 
-        header = ["experiment", "obs", "sim"]
-        writer.writerow(header)
-        for exp in experiments.keys():
-            for i in range(len(experiments[exp]["obs"])):
-                outrow=[]
-                outrow.append(exp)
-                outrow.append(experiments[exp]["obs"][i])
-                outrow.append(experiments[exp]["sims"][i])
-                writer.writerow(outrow)
-    print('obs_sim.csv written')
 
 #read general settings
 lk_clustering = {}
@@ -182,7 +168,7 @@ for clu_id, lk_clu in sim_map.iteritems():
     bestmodelrun = list(spotpy.analyser.get_modelruns(results)[index][0])
     obs_list, obs_structure = spot_setup.evaluation(obs_structure=True)
 
-    with open(script_path + '/opt_params/optimizedparams_cl_' + str(clu_id) + '.csv', 'wb') as _:
+    with open(script_path + '/opt_params/'+ calibration_target + '_optimizedparams_cl_' + str(clu_id) + '.csv', 'wb') as _:
         writer = csv.writer(_)        
         for i in range(len(best_params)):
             outrow=[]
@@ -199,7 +185,7 @@ for clu_id, lk_clu in sim_map.iteritems():
         text='optimized parameters saved!'
         print(text)
     
-    with open(script_path + '/obs_vs_sim/obs_sim_cl_' + str(clu_id) + '.csv', 'wb') as _:
+    with open(script_path + '/obs_vs_sim/' + calibration_target + '_obs_sim_cl_' + str(clu_id) + '.csv', 'wb') as _:
         writer = csv.writer(_)
         header = ["lk", "date", "obs", "sim"]
         writer.writerow(header)
