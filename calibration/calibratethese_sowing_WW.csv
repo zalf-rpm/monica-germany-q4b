@@ -1,0 +1,5 @@
+name,position in array,low,high,stepsize,optguess,minbound,maxbound,derived params
+min-temp,FALSE,10,25,1,18.5,10,25,
+days-in-temp-window,FALSE,1,20,2,14,1,20,
+max-3d-precip-sum,FALSE,0,10,3,2,0,10,
+max-curr-day-precip,FALSE,0,5,0.5,0.1,0,5,

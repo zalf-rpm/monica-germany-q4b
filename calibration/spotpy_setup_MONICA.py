@@ -12,7 +12,7 @@ class spot_setup(object):
         self.user_params = user_params
         self.params = []
         for par in user_params:
-            parname = par["name"]
+            parname = par["name"].replace("-", "_")
             if re.search(r'\d', par["array"]): #check if par["array"] contains numbers
                 parname += "_" + par["array"] #spotpy does not allow two parameters to have the same name
             if "derive_function" not in par.keys(): #spotpy does not care about derived params

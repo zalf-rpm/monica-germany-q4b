@@ -13,13 +13,31 @@ from collections import defaultdict
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.dirname(script_path) + "/monica-data/projects/monica-germany/"
+calib_id = "7"
 
-clustering_file = "clustering_lks.csv"
-run_cells_file = "sample_setup_fullcover.csv"
-calibration_target = "yield"#"sowing"#"phenology"#  
-params_to_calibrate = "calibratethese.csv"
-crop = "silage_maize"# "winter_wheat"#
-dumped_envs_folder = script_path + "/dumped_envs/localProducer-localMonica/1/"
+with open(script_path + "/" + "calibration_log.csv") as _:
+    reader =csv.reader(_)
+    reader.next()
+    for line in reader:
+        if line[0] == calib_id:
+            clustering_file = line[1]
+            run_cells_file = line[2]
+            calibration_target = line[3]
+            params_to_calibrate = line[4]
+            crop = line[5]
+            dumped_envs_folder = script_path + line[6]
+            rep = int(line[7])
+            cal_val_years_file = line[8]
+
+'''
+clustering_file = "no_clustering_lks_SM.csv"#"no_clustering_lks_WW.csv"#
+run_cells_file = "sample_setup_fullcover_SM.csv"#"sample_setup_fullcover_WW.csv"#
+calibration_target = "phenology"#"sowing"#"yield"#  
+params_to_calibrate = "calibratethese_pheno_SM.csv"#"calibratethese_sowing_SM.csv"#"calibratethese_sowing_WW.csv"# 
+crop = "silage_maize"#"winter_wheat"# 
+dumped_envs_folder = script_path + "/dumped_envs/localProducer-remoteMonica/3/"
+'''
+
 cal_info = {
     "sowing": {
         "f_name": data_path +"/lk_cleaned_pheno_" + crop + "_1999_2017.csv",
@@ -97,6 +115,17 @@ with open(script_path + "/" + run_cells_file) as _:
             sim_map[cluster][lk].append(row_col)
             sim_lks.add(lk)
 
+#read calibration years per lk
+lk2cal_years = defaultdict(list)
+with open(script_path + "/" + cal_val_years_file) as _:
+    reader = csv.reader(_)
+    reader.next()
+    for line in reader:
+        if line[1] != "skip" and line[2] == "cal":
+            lk = int(line[0])
+            yr = int(line[1])
+            lk2cal_years[lk].append(yr)
+
 #read observations
 observations = defaultdict(lambda: defaultdict(lambda: defaultdict(list))) #keys: lk, year, var_name; vals: val(s)
 cal_file = cal_info[calibration_target]
@@ -113,6 +142,9 @@ with open(cal_file["f_name"]) as _:
             continue
         val = float(row[cal_file["val_col"]])
         yr = int(row[cal_file["yr_col"]])
+        if yr not in lk2cal_years[lk]:
+            #skip validation years (only cal is used here)
+            continue
         if RepresentsInt(cal_file["var"]):
             #pheno file
             DWD_phase = float(row[cal_file["var"]])
@@ -155,11 +187,21 @@ for clu_id, lk_clu in sim_map.iteritems():
     for lk in lk_clu.keys():
         clu_obs[lk] = observations[lk]
     spot_setup = spotpy_setup_MONICA.spot_setup(params, sim_map[clu_id], clu_obs, calibration_target, dumped_envs_folder)
-    rep = 50
+    #rep = 25
 
-    sampler = spotpy.algorithms.sceua(spot_setup, dbname='SCEUA', dbformat='ram')
-    sampler.sample(rep, ngs=len(params)+1, kstop=10)
-    #sampler.sample(rep, ngs=3, kstop=50, pcento=0.01, peps=0.05)
+    #sampler = spotpy.algorithms.sceua(spot_setup, dbname='SCEUA', dbformat='ram')
+    #sampler.sample(rep, ngs=len(params)+1, kstop=10)#, pcento=5)
+
+    sampler = spotpy.algorithms.rope(spot_setup,dbname='ROPE',dbformat='ram')
+    sampler.sample(rep)
+    
+    #sampler = spotpy.algorithms.mc(spot_setup,dbname='MC',dbformat='ram')
+    #sampler = spotpy.algorithms.mle(spot_setup,dbname='MLE',dbformat='ram')
+    #sampler = spotpy.algorithms.lhs(spot_setup,dbname='LHS',dbformat='ram')
+    #sampler = spotpy.algorithms.sceua(spot_setup,dbname='SCEUA',dbformat='ram')
+    #sampler = spotpy.algorithms.demcz(spot_setup,dbname='DE-MCz',dbformat='ram')
+    #sampler = spotpy.algorithms.sa(spot_setup,dbname='SA',dbformat='ram')
+    
     
     best_params = sampler.status.params
 
@@ -168,7 +210,7 @@ for clu_id, lk_clu in sim_map.iteritems():
     bestmodelrun = list(spotpy.analyser.get_modelruns(results)[index][0])
     obs_list, obs_structure = spot_setup.evaluation(obs_structure=True)
 
-    with open(script_path + '/opt_params/'+ calibration_target + '_optimizedparams_cl_' + str(clu_id) + '.csv', 'wb') as _:
+    with open(script_path + '/opt_params/'+ calib_id + "_" + crop + "_"  + calibration_target + '_optimizedparams_cl_' + str(clu_id) + '.csv', 'wb') as _:
         writer = csv.writer(_)        
         for i in range(len(best_params)):
             outrow=[]
@@ -185,7 +227,7 @@ for clu_id, lk_clu in sim_map.iteritems():
         text='optimized parameters saved!'
         print(text)
     
-    with open(script_path + '/obs_vs_sim/' + calibration_target + '_obs_sim_cl_' + str(clu_id) + '.csv', 'wb') as _:
+    with open(script_path + '/obs_vs_sim/' + calib_id + "_" + crop + "_" + calibration_target + '_obs_sim_cl_' + str(clu_id) + '.csv', 'wb') as _:
         writer = csv.writer(_)
         header = ["lk", "date", "obs", "sim"]
         writer.writerow(header)

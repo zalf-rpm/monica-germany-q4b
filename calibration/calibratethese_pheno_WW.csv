@@ -1,0 +1,6 @@
+name,position in array,low,high,stepsize,optguess,minbound,maxbound,derived params
+StageTemperatureSum,0,50,250,25,148,50,250,
+StageTemperatureSum,1,150,500,50,293,150,450,
+StageTemperatureSum,2,250,650,50,393,250,600,
+StageTemperatureSum,3,50,300,50,180,50,300,
+StageTemperatureSum,4,200,650,50,434,200,650,

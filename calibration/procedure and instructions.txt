@@ -1,0 +1,29 @@
+STEPS TO RUN A CALIBRATION:
+
+1) DUMP THE PROPER MONICA ENVS
+launch "run-work-producer.py" with DUMP_ENVS_CALIB=true and USER_MODE="localProducer-remoteMonica". The latter customizes the envs for the cluster runs. Check that CONFIGURATION["run-setups"] corresponds to the setup desired. The list of setups can be found and extended in the file monica-data\projects\monica-germany\sim_setups.csv
+
+2) CHECK THE FILE "calibration_log.csv"
+this file contains the list of the previous calibrations. The list can be extended with new ones. The fields relevant for the calibrator are:
+
+- clustering_file: used to inform the calibrator about possible clustering of the landkreise. Each cluster will be calibrated independently from the others
+
+- run_cells_file: contains the information about the cells sampled for the calibration. only cells marked with "use-it"=y will be used. This is to allow for quick tests using subsets of cells
+
+- calibration_target: defines the target variable. Three options are supported for this study: sowing, phenology and yield. The calibrator will lookup the data needed in the "cleaned_pheno" or "yields" files in the folder monica-data\projects\monica-germany
+
+- params_to_calibrate: holds the information about the parameters under calibration
+
+- crop: either "winter_wheat" or "silage_maize"
+
+- dumped_envs_folder: where to look for the envs to run the simulations (see point 1)
+
+- rep: number of repetitions for the ROPE algorithm
+
+3) CHECK AND RUN "sampler_MONICA.py"
+set the calib_id to run a specific calibration
+
+ADDITIONAL SUPPORTING SCRIPTS:
+"write_all_lks_no_clustering" will take all the run cells marked with "use-it"=y and list them as part of a single cluster in an output file. Options for clusters made of 1 lk was added (one_lk_per_cluster = True). I/O file names have to be specified in the code
+
+"obs_vs_sim/calculate_indices" will calculate some indices at the lk level (plus all the lks together). Input file name has to be specified

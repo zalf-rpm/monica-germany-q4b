@@ -9,7 +9,7 @@ Define the sample of cells for dumping the envs (from the producer) that will be
 '''
 
 #0. Settings
-sim_id = 1
+sim_id = 4
 out_file = "sample_setup_"+ str(sim_id) + ".csv"
 relative_sample_size = 0.05 #determined after running try_ss.py in "sample_size" folder
 max_row = 9999

@@ -82,8 +82,8 @@ class monica_adapter(object):
         
         self.context = zmq.Context()
         self.socket_producer = self.context.socket(zmq.PUSH)
-        #self.socket_producer.connect("tcp://cluster1:6666")
-        self.socket_producer.connect("tcp://localhost:6666")
+        self.socket_producer.connect("tcp://cluster1:6666")
+        #self.socket_producer.connect("tcp://localhost:6666")
 
     def run(self,args):
         return self._run(*args)
@@ -182,8 +182,8 @@ class monica_adapter(object):
         
     def collect_results(self):
         socket_collector = self.context.socket(zmq.PULL)
-        #socket_collector.connect("tcp://cluster2:7777")
-        socket_collector.connect("tcp://localhost:7777")
+        socket_collector.connect("tcp://cluster1:7777")
+        #socket_collector.connect("tcp://localhost:7777")
         received_results = 0
         leave = False
         while not leave:
@@ -216,7 +216,7 @@ class monica_adapter(object):
                 print ("mismatch in dates after adding results from " + str((rec_msg["customId"]["srow"], rec_msg["customId"]["scol"])))
                 exit()            
             
-            #print (rec_msg["customId"], results_rec)
+            #print ("received " + str(rec_msg["customId"]))
             received_results += 1
             #print("total received: " + str(received_results))
 

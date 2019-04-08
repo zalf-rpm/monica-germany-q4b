@@ -1,0 +1,8 @@
+calib_id,clustering_file,run_cells_file,calibration_target,params_to_calibrate,crop,dumped_envs_folder,rep,cal_val_yrs
+1,no_clustering_lks_SM.csv,sample_setup_fullcover_SM.csv,sowing,calibratethese_sowing_SM.csv,silage_maize,/dumped_envs/localProducer-remoteMonica/3/,25,lk2yrs_cal-val_silage_maize.csv
+2,no_clustering_lks_WW.csv,sample_setup_fullcover_WW.csv,sowing,calibratethese_sowing_WW.csv,winter_wheat,/dumped_envs/localProducer-remoteMonica/4/,25,lk2yrs_cal-val_winter_wheat.csv
+3,no_clustering_lks_SM.csv,sample_setup_fullcover_SM.csv,phenology,calibratethese_pheno_SM.csv,silage_maize,/dumped_envs/localProducer-remoteMonica/5/,35,lk2yrs_cal-val_silage_maize.csv
+4,no_clustering_lks_WW.csv,sample_setup_fullcover_WW.csv,phenology,calibratethese_pheno_WW.csv,winter_wheat,/dumped_envs/localProducer-remoteMonica/6/,35,lk2yrs_cal-val_winter_wheat.csv
+5,individual_lks_SM.csv,sample_setup_fullcover_SM.csv,phenology,calibratethese_pheno_SM.csv,silage_maize,/dumped_envs/localProducer-remoteMonica/5/,35,lk2yrs_cal-val_silage_maize.csv
+6,individual_lks_WW.csv,sample_setup_fullcover_WW.csv,phenology,calibratethese_pheno_WW.csv,winter_wheat,/dumped_envs/localProducer-remoteMonica/6/,35,lk2yrs_cal-val_winter_wheat.csv
+7,individual_lks_SM_test.csv,sample_setup_fullcover_SM_test.csv,phenology,calibratethese_pheno_SM.csv,silage_maize,/dumped_envs/localProducer-remoteMonica/5/,35,lk2yrs_cal-val_silage_maize.csv
