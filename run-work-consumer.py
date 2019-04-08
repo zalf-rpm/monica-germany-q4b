@@ -58,7 +58,7 @@ PATHS = {
 
 CONFIGURATION = {
         "mode": USER_MODE,
-        "server": "localhost",
+        "server": "cluster1",
         "server-port": "7777",
         "producer-server": "localhost",
         "producer-config-port": "6661",

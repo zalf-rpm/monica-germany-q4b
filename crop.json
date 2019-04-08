@@ -63,6 +63,10 @@
 							"max-3d-precip-sum": 5,
 							"max-curr-day-precip": 1,
 							"harvest-time": "maturity"
+						},
+						"latest": { 
+							"type": "Harvest", 
+							"date": "0000-09-24"
 						}
 					}
 				}
@@ -83,8 +87,8 @@
 							"crop": ["ref", "crops", "WW"],
 							"earliest-date": "0000-08-26",
 							"latest-date": "0000-10-09",
-							"min-temp": 22.0,
-							"days-in-temp-window": 10,
+							"min-temp": 18.5,
+							"days-in-temp-window": 14,
 							"min-%-asw": 0,
 							"max-%-asw": 100,
 							"max-3d-precip-sum": 2,
@@ -106,6 +110,10 @@
 							"max-3d-precip-sum": 5,
 							"max-curr-day-precip": 1,
 							"harvest-time": "maturity"
+						},
+						"latest": { 
+							"type": "Harvest", 
+							"date": "0001-08-04"
 						}
 					}
 				}

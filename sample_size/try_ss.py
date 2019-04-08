@@ -9,14 +9,14 @@ Resampling cells from output files to determine the impact of the sample size on
 Helpful to identify minimum sample size for different sim_id and target variables.
 '''
 #0. Settings
-sim_id = 1
-target_var = "Anthesis-doy"#"Yield-final"
+sim_id = 4
+target_var = "Sowing-doy"#"Anthesis-doy"#"Yield-final"
 n_random_samples = 1
 step_ss = 20
 min_ss = 20
 max_ss = 400
-out_file = "ss_"+ target_var + "_SM.csv"
-max_row = 320
+out_file = "ss_"+ target_var + "_WW.csv"
+max_row = 9999
 ###
 
 script_path = os.path.dirname(os.path.abspath(__file__))

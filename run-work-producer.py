@@ -52,21 +52,21 @@ import numpy as np
 # climate-data
 
 
-USER_MODE = "localProducer-localMonica"
-#USER_MODE = "localProducer-remoteMonica"
+#USER_MODE = "localProducer-localMonica"
+USER_MODE = "localProducer-remoteMonica"
 #USER_MODE = "container"
 
 PATHS = {
     # adjust the local path to your environment
     "localProducer-localMonica": {
-        "producer-path-to-climate-dir": "Z:/data/climate/dwd/csvs/", # mounted path to archive or hard drive with climate data; used only for latlon file
+        "producer-path-to-climate-dir": "A:/data/climate/dwd/csvs/", # mounted path to archive or hard drive with climate data; used only for latlon file
         "producer-path-to-data-dir": "C:/Users/stella/Documents/GitHub/monica-germany-q4b/monica-data/data/", # mounted path to archive or hard drive with data 
         "producer-path-to-projects-dir": "C:/Users/stella/Documents/GitHub/monica-germany-q4b/monica-data/projects/", # mounted path to archive or hard drive with project data 
         "monica-parameters-path": "C:/Users/stella/Documents/GitHub/monica-parameters/", # path to monica-parameters
-        "monica-path-to-climate-dir": "Z:/data/climate/dwd/csvs/germany/", # mounted path to archive accessable by monica executable
+        "monica-path-to-climate-dir": "A:/data/climate/dwd/csvs/germany/", # mounted path to archive accessable by monica executable
     },
     "localProducer-remoteMonica": {
-        "producer-path-to-climate-dir": "Z:/data/climate/dwd/csvs/", # mounted path to archive or hard drive with climate data; used only for latlon file
+        "producer-path-to-climate-dir": "A:/data/climate/dwd/csvs/", # mounted path to archive or hard drive with climate data; used only for latlon file
         "producer-path-to-data-dir": "C:/Users/stella/Documents/GitHub/monica-germany-q4b/monica-data/data/", # mounted path to archive or hard drive with data 
         "producer-path-to-projects-dir": "C:/Users/stella/Documents/GitHub/monica-germany-q4b/monica-data/projects/", # mounted path to archive or hard drive with project data 
         "monica-parameters-path": "C:/Users/stella/Documents/GitHub/monica-parameters/", # path to monica-parameters
@@ -94,7 +94,7 @@ CONFIGURATION = {
         "crop.json": "crop.json",
         "site.json": "site.json",
         "setups-file": "sim_setups.csv",
-        "run-setups": "[1]",
+        "run-setups": "[6]",
         "shared_id": None,
     }
 
@@ -116,7 +116,7 @@ DEBUG_ROWS = 10
 DEBUG_WRITE_FOLDER = "./debug_out"
 DEBUG_WRITE_CLIMATE = False
 
-DUMP_ENVS_CALIB = False
+DUMP_ENVS_CALIB = True
 if DUMP_ENVS_CALIB:
     DEBUG_DONOT_SEND = True #no need to run monica
     script_path = os.path.dirname(os.path.abspath(__file__))
@@ -216,7 +216,7 @@ def run_producer(config):
         if DUMP_ENVS_CALIB:
             #identify sample cells            
             sample_cells = set()
-            sample_cells_file = "sample_setup_partialcover.csv" if setup["landcover"] else "sample_setup_fullcover.csv"
+            sample_cells_file = "sample_setup_partialcover_" + crop_id + ".csv" if setup["landcover"] else "sample_setup_fullcover_" + crop_id + ".csv"
             with open(script_path + "/calibration/" + sample_cells_file) as _:
                 reader = csv.reader(_)
                 header = reader.next()
@@ -227,7 +227,7 @@ def run_producer(config):
                     row_col = (int(row[data_fields["row"]]), int(row[data_fields["col"]]))
                     sample_cells.add(row_col)
 
-        #read whitelisted landkreise (i.e., those having at least some information for both phenology and yield)
+        #read whitelisted landkreise (i.e., those having enough information for both phenology and yield)
         whitelist_lk = set()
         whitelist_file = ""
         if crop_id == "SM":
@@ -435,7 +435,7 @@ def run_producer(config):
                     relative_year = worksteps[1]["latest-date"].split("-")[0]
                     latest_date = date(2018, 12, 31) + timedelta(days=latest_harvest_doy)
                     worksteps[1]["latest-date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
-                if setup["harvest-date"] == "latest":
+                elif setup["harvest-date"] == "latest":
                     #used for calibration of phenology:
                     #prevents stage to be reset to 0
                     relative_year = worksteps[1]["date"].split("-")[0]
@@ -548,6 +548,12 @@ def run_producer(config):
                     dump_file = str(srow) + "_" + str(scol) + ".json"
                     with open(path_to_dump_dir + "/" + dump_file, "w") as _:
                         _.write(json.dumps(env_template, indent=4))
+                    #test dumped env:
+                    #with open(path_to_dump_dir + "/" + dump_file) as _:
+                    #    test_env = json.load(_)
+                    #    socket.send_json(test_env)
+                    #    print "testing single dumped env and exiting"
+                    #    exit()
 
                 if not DEBUG_DONOT_SEND :
                     socket.send_json(env_template)
