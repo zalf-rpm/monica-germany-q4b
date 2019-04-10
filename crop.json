@@ -35,6 +35,16 @@
 							"type": "Sowing", 
 							"crop": ["ref", "crops", "SM"] 
 						},
+						"de": { 
+							"date": "0000-04-26", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "SM"] 
+						},
+						"lk": { 
+							"date": "0000-04-26", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "SM"] 
+						},
 						"auto": { 
 							"type": "AutomaticSowing", 
 							"crop": ["ref", "crops", "SM"],
@@ -67,6 +77,10 @@
 						"latest": { 
 							"type": "Harvest", 
 							"date": "0000-09-24"
+						},
+						"latest-de": { 
+							"type": "Harvest", 
+							"date": "0000-09-24"
 						}
 					}
 				}
@@ -78,6 +92,16 @@
 				"worksteps": {
 					"sowing": {
 						"fixed": { 
+							"date": "0000-10-05", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "WW"] 
+						},
+						"de": { 
+							"date": "0000-10-05", 
+							"type": "Sowing", 
+							"crop": ["ref", "crops", "WW"] 
+						},
+						"lk": { 
 							"date": "0000-10-05", 
 							"type": "Sowing", 
 							"crop": ["ref", "crops", "WW"] 
@@ -112,6 +136,10 @@
 							"harvest-time": "maturity"
 						},
 						"latest": { 
+							"type": "Harvest", 
+							"date": "0001-08-04"
+						},
+						"latest-de": { 
 							"type": "Harvest", 
 							"date": "0001-08-04"
 						}

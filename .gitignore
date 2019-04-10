@@ -124,3 +124,4 @@ dmypy.json
 /calibration/clustering_lks.csv
 /calibration/local-server-command.txt
 /calibration/sample_setup_fullcover.csv
+/calibration/ADAM/

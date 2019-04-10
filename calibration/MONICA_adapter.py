@@ -15,7 +15,7 @@ import numpy as np
 script_path = os.path.dirname(os.path.abspath(__file__))
 
 class monica_adapter(object):
-    def __init__(self, sim_map, observations, calibration_target, dumped_envs_folder):
+    def __init__(self, sim_map, observations, calibration_target, dumped_envs_folder, inj_pheno_pars):
 
         self.obslist = [] #observations data structures for spotpy; keys: lk, year, var_name; vals: val(s)
         self.custom_events = defaultdict(list) # lk -> list of events needed
@@ -40,7 +40,13 @@ class monica_adapter(object):
             with open(dumped_envs_folder + "/" + fname) as _:
                 template_env = json.load(_)
                 #the following holds species, cv and sowing params (uniform for all the lk)
-                self.lk_2_template_params[lk] = template_env["cropRotation"][0]["worksteps"][0]  
+                self.lk_2_template_params[lk] = template_env["cropRotation"][0]["worksteps"][0]
+            #inject pheno params (either de or lk)
+            pheno_pars = inj_pheno_pars.get(0, inj_pheno_pars.get(lk)) #check existence of de/lk pheno pars 
+            if pheno_pars != None:
+                cultivar_params = self.lk_2_template_params[lk]["crop"]["cropParams"]["cultivar"]
+                for param in pheno_pars:
+                    self.seek_set_param(param, param["value"], cultivar_params)
 
         #load custom events (for MONICA output)
         with open(script_path + "/template_events.json") as _:
@@ -88,33 +94,7 @@ class monica_adapter(object):
     def run(self,args):
         return self._run(*args)
 
-    def _run(self, vector, user_params):
-
-        def seek_set_param(par, p_value, model_params):
-            p_name = par["name"]
-            array = par["array"]
-            add_index = False
-            if isinstance(model_params[p_name], int) or isinstance(model_params[p_name], float):
-                add_index = False
-            elif len(model_params[p_name]) > 1 and isinstance(model_params[p_name][1], basestring):
-                add_index = True #the param contains text (e.g., units)
-            if array.upper() == "FALSE":
-                if add_index:
-                    model_params[p_name][0] = p_value
-                else:
-                    model_params[p_name] = p_value
-            else: #param is in an array (possibly nested)
-                array = array.split("_") #nested array
-                if add_index:
-                    array = [0] + array
-                if len(array) == 1:
-                    model_params[p_name][int(array[0])] = p_value
-                elif len(array) == 2:
-                    model_params[p_name][int(array[0])][int(array[1])] = p_value
-                elif len(array) == 3:
-                    model_params[p_name][int(array[0])][int(array[1])][int(array[2])] = p_value
-                else:
-                    print "param array too nested, contact developers"
+    def _run(self, vector, user_params):        
             
         for lk, template_params in self.lk_2_template_params.iteritems():
             species_params = template_params["crop"]["cropParams"]["species"]
@@ -123,18 +103,19 @@ class monica_adapter(object):
             for i in range(len(user_params)):
                 if user_params[i]["name"] in template_params:
                     #sowing params
-                    seek_set_param(user_params[i],
+                    self.seek_set_param(user_params[i],
                     user_params[i]["derive_function"](vector, template_params) if "derive_function" in user_params[i] else vector[i],
                     template_params)
                 elif user_params[i]["name"] in species_params:
-                    seek_set_param(user_params[i],
+                    self.seek_set_param(user_params[i],
                     user_params[i]["derive_function"](vector, species_params) if "derive_function" in user_params[i] else vector[i],
                     species_params)
                 elif user_params[i]["name"] in cultivar_params:
-                    seek_set_param(user_params[i],
+                    self.seek_set_param(user_params[i],
                     user_params[i]["derive_function"](vector, cultivar_params) if "derive_function" in user_params[i] else vector[i],
                     cultivar_params)
                 else:
+                    #continue
                     print(str(user_params[i]["name"]) + " not found, please revise and restart")
                     exit()
 
@@ -222,3 +203,29 @@ class monica_adapter(object):
 
             if received_results == self.n_expected_out:
                 leave = True
+    
+    def seek_set_param(self, par, p_value, model_params):
+        p_name = par["name"]
+        array = par["array"]
+        add_index = False
+        if isinstance(model_params[p_name], int) or isinstance(model_params[p_name], float):
+            add_index = False
+        elif len(model_params[p_name]) > 1 and isinstance(model_params[p_name][1], basestring):
+            add_index = True #the param contains text (e.g., units)
+        if array.upper() == "FALSE":
+            if add_index:
+                model_params[p_name][0] = p_value
+            else:
+                model_params[p_name] = p_value
+        else: #param is in an array (possibly nested)
+            array = array.split("_") #nested array
+            if add_index:
+                array = [0] + array
+            if len(array) == 1:
+                model_params[p_name][int(array[0])] = p_value
+            elif len(array) == 2:
+                model_params[p_name][int(array[0])][int(array[1])] = p_value
+            elif len(array) == 3:
+                model_params[p_name][int(array[0])][int(array[1])][int(array[2])] = p_value
+            else:
+                print "param array too nested, contact developers"

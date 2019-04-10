@@ -94,7 +94,7 @@ CONFIGURATION = {
         "crop.json": "crop.json",
         "site.json": "site.json",
         "setups-file": "sim_setups.csv",
-        "run-setups": "[6]",
+        "run-setups": "[66]",
         "shared_id": None,
     }
 
@@ -115,6 +115,16 @@ DEBUG_WRITE = False
 DEBUG_ROWS = 10
 DEBUG_WRITE_FOLDER = "./debug_out"
 DEBUG_WRITE_CLIMATE = False
+
+#DE mgt doys (from cleaned pheno_file)
+AVG_SOWING_DE = {
+    "SM": 116,
+    "WW": 279
+}
+LATEST_HARV_DE = {
+    "SM": 308,
+    "WW": 258
+} 
 
 DUMP_ENVS_CALIB = True
 if DUMP_ENVS_CALIB:
@@ -144,7 +154,10 @@ def run_producer(config):
 
     # read setup from csv file
     setups = Mrunlib.read_sim_setups(paths["producer-path-to-projects-dir"] + PROJECT_FOLDER + config["setups-file"])
-    run_setups = json.loads(config["run-setups"])
+    if config["run-setups"].lower() == "[all]":
+        run_setups = setups.keys()
+    else:
+        run_setups = json.loads(config["run-setups"])
     print "read sim setups: ", paths["producer-path-to-projects-dir"] + PROJECT_FOLDER + config["setups-file"]
 
     #transforms geospatial coordinates from one coordinate reference system to another
@@ -216,7 +229,7 @@ def run_producer(config):
         if DUMP_ENVS_CALIB:
             #identify sample cells            
             sample_cells = set()
-            sample_cells_file = "sample_setup_partialcover_" + crop_id + ".csv" if setup["landcover"] else "sample_setup_fullcover_" + crop_id + ".csv"
+            sample_cells_file = "sample_corinecover_" + crop_id + ".csv" if setup["landcover"] else "sample_fullcover_" + crop_id + ".csv"
             with open(script_path + "/calibration/" + sample_cells_file) as _:
                 reader = csv.reader(_)
                 header = reader.next()
@@ -413,9 +426,13 @@ def run_producer(config):
                         earliest_sowing_doy += correction
                 
                 #set 
-                if setup["sowing-date"] == "fixed":
+                if setup["sowing-date"] == "fixed" or setup["sowing-date"] == "lk":
                     relative_year = worksteps[0]["date"].split("-")[0]
                     avg_date = date(2018, 12, 31) + timedelta(days=avg_sowing_doy) 
+                    worksteps[0]["date"] = relative_year + "-{:02d}-{:02d}".format(avg_date.month, avg_date.day)
+                elif setup["sowing-date"] == "de":
+                    relative_year = worksteps[0]["date"].split("-")[0]
+                    avg_date = date(2018, 12, 31) + timedelta(days=AVG_SOWING_DE[crop_id]) 
                     worksteps[0]["date"] = relative_year + "-{:02d}-{:02d}".format(avg_date.month, avg_date.day)                         
                 elif setup["sowing-date"] == "auto":
                     relative_year = worksteps[0]["latest-date"].split("-")[0]
@@ -437,9 +454,15 @@ def run_producer(config):
                     worksteps[1]["latest-date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
                 elif setup["harvest-date"] == "latest":
                     #used for calibration of phenology:
-                    #prevents stage to be reset to 0
+                    #latest in the lk, prevents stage to be reset to 0
                     relative_year = worksteps[1]["date"].split("-")[0]
                     latest_date = date(2018, 12, 31) + timedelta(days=latest_harvest_doy) 
+                    worksteps[1]["date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
+                elif setup["harvest-date"] == "latest-de":
+                    #used for calibration of phenology:
+                    #latest in de, prevents stage to be reset to 0
+                    relative_year = worksteps[1]["date"].split("-")[0]
+                    latest_date = date(2018, 12, 31) + timedelta(days=LATEST_HARV_DE[crop_id]) 
                     worksteps[1]["date"] = relative_year + "-{:02d}-{:02d}".format(latest_date.month, latest_date.day)
                 else:
                     print "unable to handle harvest option"
@@ -586,8 +609,9 @@ def run_producer(config):
         print "Setup ", (sent_env_count-1), " envs took ", (stop_setup_time - start_setup_time), " seconds"
 
         # wait for the consumer to have processed all messages for the current setup_id, only continue 
-        print "Waiting for sync message to continue"
-        msg = consumer_sync_socket.recv_json()
+        if not DUMP_ENVS_CALIB:
+            print "Waiting for sync message to continue"
+            msg = consumer_sync_socket.recv_json()
         
         ################################test
         #print "saving lk grid..."

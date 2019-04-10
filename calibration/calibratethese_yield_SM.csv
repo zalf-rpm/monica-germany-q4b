@@ -1,0 +1,2 @@
+name,position in array,low,high,stepsize,optguess,minbound,maxbound,derived params
+MaxAssimilationRate,FALSE,25,70,10,65,25,70,

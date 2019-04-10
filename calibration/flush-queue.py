@@ -32,7 +32,7 @@ def main():
     if LOCAL_RUN:
         socket.connect("tcp://localhost:7777")
     else:
-        socket.connect("tcp://cluster2:7777")
+        socket.connect("tcp://cluster1:7777")
 
     i = 0
     while True:
