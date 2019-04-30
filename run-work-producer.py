@@ -17,6 +17,8 @@
 
 import time
 import os
+from os import listdir
+from os.path import isfile, join
 import math
 import json
 import csv
@@ -94,8 +96,9 @@ CONFIGURATION = {
         "crop.json": "crop.json",
         "site.json": "site.json",
         "setups-file": "sim_setups.csv",
-        "run-setups": "[66]",
+        "run-setups": "[all]",
         "shared_id": None,
+        "inject-params": True #turn this off if you need to dump envs for calibration!
     }
 
 PROJECT_FOLDER = "monica-germany/"
@@ -128,8 +131,61 @@ LATEST_HARV_DE = {
 
 DUMP_ENVS_CALIB = True
 if DUMP_ENVS_CALIB:
+    CONFIGURATION["inject-params"] = False # dumped envs are used to perform calibration
     DEBUG_DONOT_SEND = True #no need to run monica
-    script_path = os.path.dirname(os.path.abspath(__file__))
+script_path = os.path.dirname(os.path.abspath(__file__))
+
+def load_inj_pars(params_path, crop_id):
+    params_files = [f for f in listdir(params_path) if isfile(join(params_path, f))]
+    loaded_params = defaultdict(list)
+    for f in params_files:
+        cl = int(f.split(".")[0].split("_")[-1]) #after dropping the clustering approach pheno_cl = yield_cl = de/lk. de=0
+        with open(join(params_path, f)) as _:
+            reader = csv.reader(_)                    
+            for row in reader:
+                if row[0] == "Don't forget to calculate and set derived params!":
+                    continue
+                p={}
+                p["name"] = row[0]
+                p["array"] = row[1]
+                p["value"] = float(row[2])
+                loaded_params[cl].append(p)
+                if p["name"] == "DroughtStressThreshold":
+                    #derived params, hardcoded (check "calibratethese" files for more info)
+                    if crop_id == "SM":
+                        my_range = range(1, 6)
+                    elif crop_id == "WW":
+                        my_range = range(1, 5) #TODO check after calibration of WW if correct
+                    for i in my_range:
+                        p["array"] = str(i)
+                        loaded_params[cl].append(p)
+    return loaded_params
+
+def seek_set_param(par, p_value, model_params):
+    p_name = par["name"]
+    array = par["array"]
+    add_index = False
+    if isinstance(model_params[p_name], int) or isinstance(model_params[p_name], float):
+        add_index = False
+    elif len(model_params[p_name]) > 1 and isinstance(model_params[p_name][1], basestring):
+        add_index = True #the param contains text (e.g., units)
+    if array.upper() == "FALSE":
+        if add_index:
+            model_params[p_name][0] = p_value
+        else:
+            model_params[p_name] = p_value
+    else: #param is in an array (possibly nested)
+        array = array.split("_") #nested array
+        if add_index:
+            array = [0] + array
+        if len(array) == 1:
+            model_params[p_name][int(array[0])] = p_value
+        elif len(array) == 2:
+            model_params[p_name][int(array[0])][int(array[1])] = p_value
+        elif len(array) == 3:
+            model_params[p_name][int(array[0])][int(array[1])][int(array[2])] = p_value
+        else:
+            print "param array too nested, contact developers"
 
 # commandline parameters e.g "server=localhost port=6666 shared_id=2"
 def run_producer(config):
@@ -281,6 +337,14 @@ def run_producer(config):
                 if float(row[data_fields["phase"]]) == 24:
                     lk_mgt_data[lk]["harvest"].append(float(row[data_fields["avg_doy"]]))
 
+        #read params to be injected
+        if config["inject-params"] == True:
+            pheno_params_path = script_path + '/calibration/opt_params/'+ str(setup_id) + "0/"
+            yield_params_path = script_path + '/calibration/opt_params/'+ str(setup_id) + "1/"
+
+            inj_pheno_params = load_inj_pars(pheno_params_path, crop_id)
+            inj_yield_params = load_inj_pars(yield_params_path, crop_id)
+
         # read template sim.json 
         with open(setup.get("sim.json", config["sim.json"])) as _:
             sim_json = json.load(_)
@@ -400,6 +464,10 @@ def run_producer(config):
                     print "lk " + str(landkreis_id) + " not whitelisted, skipping it"
                     continue
                 #print "row/col:", srow, "/", scol, "->", landkreis_id
+
+                #test
+                #if landkreis_id != 1051:
+                #    continue
                 
                 height_nn = dem_gk5_interpolate(sr_gk5, sh_gk5)
                 slope = slope_gk5_interpolate(sr_gk5, sh_gk5)
@@ -475,6 +543,26 @@ def run_producer(config):
                 #        + "|" + crop_id \
                 #        + "|" + str(uj_id)), "sowing": worksteps[0], "harvest": worksteps[1]}, jdf, indent=2)
                 #    c += 1
+
+                # inject (calibrated) parameters
+                if config["inject-params"] == True:
+                    #get de (i.e., 0) or lk pheno pars
+                    pheno_params = inj_pheno_params.get(0, inj_pheno_params.get(landkreis_id)) 
+                    yield_params = inj_yield_params.get(0, inj_yield_params.get(landkreis_id))
+
+                    inj_params = pheno_params + yield_params                 
+                    
+                    cultivar_params = env_template["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["cultivar"]
+                    species_params = env_template["cropRotation"][0]["worksteps"][0]["crop"]["cropParams"]["species"]
+                    
+                    for param in inj_params:
+                        if param["name"] in cultivar_params:
+                            seek_set_param(param, param["value"], cultivar_params)
+                        elif param["name"] in species_params:
+                            seek_set_param(param, param["value"], species_params)
+                        else:
+                            print(str(param["name"]) + " not found, please revise and restart")
+                            exit()
 
                 env_template["params"]["userCropParameters"]["__enable_T_response_leaf_expansion__"] = setup["LeafExtensionModifier"]
 

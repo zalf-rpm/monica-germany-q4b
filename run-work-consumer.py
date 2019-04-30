@@ -66,7 +66,7 @@ CONFIGURATION = {
         "start-row": "0",
         "end-row": "-1",
         "shared_id": None,
-        "no-of-setups": 1
+        "no-of-setups": 64
     }
 
 TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}germany/buek1000_1000_gk5.asc"

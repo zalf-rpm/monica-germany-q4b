@@ -125,3 +125,5 @@ dmypy.json
 /calibration/local-server-command.txt
 /calibration/sample_setup_fullcover.csv
 /calibration/ADAM/
+/calibration/old_split_cal_val/
+/calibration/test_1051/

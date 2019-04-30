@@ -9,7 +9,7 @@ script to split available data into calibration and validation dataset.
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.dirname(script_path) + "/monica-data/projects/monica-germany/"
-crop = "winter_wheat"#"silage_maize"# 
+crop = "winter_wheat"# "silage_maize"#
 clustering_file = "individual_lks_WW.csv"#"individual_lks_SM.csv"#
 
 cal_info = {
@@ -183,7 +183,7 @@ with open(script_path + "/lk2yrs_cal-val_" + crop + ".csv", "wb") as _:
             continue
         
         else:
-            n_calib_years = len(total_years)/2
+            n_calib_years = (len(total_years) + 1)/2
             
             #draw a random sample of years for calibration
             cal_years = random.sample(years_yy, n_calib_years)

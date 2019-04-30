@@ -42,19 +42,19 @@ design <- FrF2(resolution = 5, randomize = FALSE, factor.names = list(
   #GroundWaterLevel = c("false", "true"), 
   #ImpenetrableLayer = c("false", "true"),
   SowingDate = c("de", "lk"),
-  #HarvestDate = c("de", "auto"),
   Slope = c("false", "true"),
   LandCover = c("false", "true"), 
   WaterDeficitResponse = c("false", "true"),
   Nresponse_and_Fertil = c("false", "true"), 
   Phenology_cal = c("de", "lk"),
   Yield_cal = c("de", "lk")
+  #HarvestDate = c("de", "lk")
   ))
 
 design
 summary(design)
 
-export.design(design, filename = "design_res_V_new", type = "csv", OutDec = ".") 
+export.design(design, filename = "design_res_V", type = "csv", OutDec = ".") 
 
 res_r <- read.csv("C:/Users/stella/Documents/GitHub/monica-germany/calculate-indices/report_best_exps/r.csv",header=F)
 res_rrmse <- read.csv("C:/Users/stella/Documents/GitHub/monica-germany/calculate-indices/report_best_exps/RRMSE.csv",header=F)

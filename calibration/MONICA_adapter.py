@@ -94,8 +94,8 @@ class monica_adapter(object):
     def run(self,args):
         return self._run(*args)
 
-    def _run(self, vector, user_params):        
-            
+    def _run(self, vector, user_params):
+           
         for lk, template_params in self.lk_2_template_params.iteritems():
             species_params = template_params["crop"]["cropParams"]["species"]
             cultivar_params = template_params["crop"]["cropParams"]["cultivar"]
@@ -125,7 +125,10 @@ class monica_adapter(object):
         collector.start()
 
         #launch sims from dumped envs
-        for lk, sample in self.sim_map.iteritems():
+        for lk, sample in self.sim_map.iteritems():            
+            #clean data structure to collect the output
+            self.outputs[lk]["dates"] = set()
+            self.outputs[lk]["vals"] = []
             for cell in sample:
                 fname = str(cell[0]) + "_" + str(cell[1]) + ".json"
                 with open(self.dumped_envs_folder + "/" + fname) as _:

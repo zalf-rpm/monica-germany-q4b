@@ -20,8 +20,11 @@ this file contains the list of the previous calibrations. The list can be extend
 
 - rep: number of repetitions for the ROPE algorithm
 
+- cal_val_years: file to split available data into calibration and validation datasets
+
+- load pheno params: for yield calibration, calibrated phenology parameters can be loaded from file
+
 3) CHECK AND RUN "sampler_MONICA.py"
-set the calib_id to run a specific calibration
 
 ADDITIONAL SUPPORTING SCRIPTS:
 "write_all_lks_no_clustering" will take all the run cells marked with "use-it"=y and list them as part of a single cluster in an output file. Options for clusters made of 1 lk was added (one_lk_per_cluster = True). I/O file names have to be specified in the code
